@@ -16,10 +16,7 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->loadViewsFrom(
-            __DIR__ . '/../resources/views',
-            'nova-notifications'
-        );
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'nova-notifications');
 
         $this->publishes(
             [
@@ -30,41 +27,44 @@ class ToolServiceProvider extends ServiceProvider
             'nova-notifications-lang'
         );
 
-        $this->loadJsonTranslationsFrom(
-            resource_path('lang/vendor/nova-notifications')
-        );
+        $this->loadJsonTranslationsFrom(resource_path('lang/vendor/nova-notifications'));
 
         $this->app->booted(function () {
             $this->routes();
         });
 
-        Event::listen(
-            'Illuminate\Notifications\Events\NotificationSent',
-            function ($event) {
-                info($event);
-                info($event->notification);
-                NovaNotification::create([
-                    'type' => get_class($event->notification),
-                    'notifiable_type' => get_class($event->notifiable),
-                    'notifiable_id' => $event->notifiable->id ?? '?',
-                    'channel' => $event->channel,
-                    'failed' => false
-                ]);
-            }
-        );
+        Event::listen('Illuminate\Notifications\Events\NotificationSent', function (
+            $event
+        ) {
+            NovaNotification::create([
+                'id' => $event->notification->id,
+                'type' => get_class($event->notification),
+                'notifiable_type' => get_class($event->notifiable),
+                'notifiable_id' => $event->notifiable->id ?? '?',
+                'channel' => $event->channel,
+                'failed' => false,
+                'data' => $event->notification->getBody() ?? ''
+                // 'user_id' => $creator ? $creator->id : null,
+                // 'icon' => $data['icon'],
+                // 'body' => $data['body'],
+                // 'action_text' => array_get($data, 'action_text'),
+                // 'action_url' => array_get($data, 'action_url'),
+            ]);
+        });
 
-        Event::listen(
-            'Illuminate\Notifications\Events\NotificationFailed',
-            function ($event) {
-                NovaNotification::create([
-                    'type' => get_class($event->notification),
-                    'notifiable_type' => get_class($event->notifiable),
-                    'notifiable_id' => $event->notifiable->id ?? '',
-                    'channel' => $event->channel,
-                    'failed' => true
-                ]);
-            }
-        );
+        Event::listen('Illuminate\Notifications\Events\NotificationFailed', function (
+            $event
+        ) {
+            NovaNotification::create([
+                'id' => $event->notification->id,
+                'type' => get_class($event->notification),
+                'notifiable_type' => get_class($event->notifiable),
+                'notifiable_id' => $event->notifiable->id ?? '',
+                'channel' => $event->channel,
+                'failed' => true,
+                'data' => $event->notification->getBody() ?? ''
+            ]);
+        });
     }
 
     /**

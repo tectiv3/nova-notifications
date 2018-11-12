@@ -10,8 +10,7 @@ class NotificationController extends ApiController
 {
     public function index()
     {
-        return DB::table('nova_notifications')
-            ->get();
+        return ['data' => DB::table('notifications')->get()];
     }
 
     /**
@@ -21,7 +20,9 @@ class NotificationController extends ApiController
     public function send(Request $request)
     {
         $notificationClass = $request->get('notification')['name'];
-        $params = collect($request->get('notificationParameters'))->map(function ($param) {
+        $params = collect($request->get('notificationParameters'))->map(function (
+            $param
+        ) {
             if ($this->isEloquentModelClass($param['type'])) {
                 return $param['type']::findOrFail($param['value']);
             }
@@ -29,19 +30,27 @@ class NotificationController extends ApiController
             return $param['value'];
         });
 
-        if (! class_exists($notificationClass)) {
+        if (!class_exists($notificationClass)) {
             return response('', 400);
         }
 
         try {
-            $notification = $params ? new $notificationClass(...$params) : new $notificationClass();
+            $notification = $params
+                ? new $notificationClass(...$params)
+                : new $notificationClass();
         } catch (\Throwable $e) {
-            return response(__('The notification could not be created with the provided information'), 422);
+            return response(
+                __('The notification could not be created with the provided information'),
+                422
+            );
         }
 
         $notifiable = str_replace('.', '\\', $request->get('notifiable')['name']);
 
-        Notification::send($notifiable::findOrFail($request->get('notifiable')['value']), $notification);
+        Notification::send(
+            $notifiable::findOrFail($request->get('notifiable')['value']),
+            $notification
+        );
 
         $this->respondSuccess();
     }

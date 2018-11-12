@@ -48,7 +48,7 @@ After installing the tool, you should see the new sidebar navigation item for `N
 
 On the `Overview` page you can see all of the sent and failed notifications. This only works for notifications sent after installing this package. 
 
-Usually, only the notifications sent through the `database` channel will be stored in the database. This package comes with a new `nova_notifications` table, where `all` of them get stored.
+Usually, only the notifications sent through the `database` channel will be stored in the database.
 
 ## Send
 
