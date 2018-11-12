@@ -20,6 +20,7 @@ class NovaNotification extends Model
     protected $table = 'notifications';
 
     protected $fillable = [
+        'id',
         'type',
         'user_id',
         'notifiable_type',
