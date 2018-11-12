@@ -16,39 +16,55 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'nova-notifications');
+        $this->loadViewsFrom(
+            __DIR__ . '/../resources/views',
+            'nova-notifications'
+        );
 
-        $this->publishes([
-            __DIR__.'/../resources/lang' => resource_path('lang/vendor/nova-notifications'),
-        ], 'nova-notifications-lang');
+        $this->publishes(
+            [
+                __DIR__ . '/../resources/lang' => resource_path(
+                    'lang/vendor/nova-notifications'
+                )
+            ],
+            'nova-notifications-lang'
+        );
 
-        $this->loadJsonTranslationsFrom(resource_path('lang/vendor/nova-notifications'));
-
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadJsonTranslationsFrom(
+            resource_path('lang/vendor/nova-notifications')
+        );
 
         $this->app->booted(function () {
             $this->routes();
         });
 
-        Event::listen('Illuminate\Notifications\Events\NotificationSent', function ($event) {
-            NovaNotification::create([
-                'notification' => get_class($event->notification),
-                'notifiable_type' => get_class($event->notifiable),
-                'notifiable_id' => $event->notifiable->id ?? '?',
-                'channel' => $event->channel,
-                'failed' => false,
-            ]);
-        });
+        Event::listen(
+            'Illuminate\Notifications\Events\NotificationSent',
+            function ($event) {
+                info($event);
+                info($event->notification);
+                NovaNotification::create([
+                    'type' => get_class($event->notification),
+                    'notifiable_type' => get_class($event->notifiable),
+                    'notifiable_id' => $event->notifiable->id ?? '?',
+                    'channel' => $event->channel,
+                    'failed' => false
+                ]);
+            }
+        );
 
-        Event::listen('Illuminate\Notifications\Events\NotificationFailed', function ($event) {
-            NovaNotification::create([
-                'notification' => get_class($event->notification),
-                'notifiable_type' => get_class($event->notifiable),
-                'notifiable_id' => $event->notifiable->id ?? '',
-                'channel' => $event->channel,
-                'failed' => true,
-            ]);
-        });
+        Event::listen(
+            'Illuminate\Notifications\Events\NotificationFailed',
+            function ($event) {
+                NovaNotification::create([
+                    'type' => get_class($event->notification),
+                    'notifiable_type' => get_class($event->notifiable),
+                    'notifiable_id' => $event->notifiable->id ?? '',
+                    'channel' => $event->channel,
+                    'failed' => true
+                ]);
+            }
+        );
     }
 
     /**
@@ -64,7 +80,7 @@ class ToolServiceProvider extends ServiceProvider
 
         Route::middleware(['nova', Authorize::class])
             ->prefix('nova-vendor/nova-notifications')
-            ->group(__DIR__.'/../routes/api.php');
+            ->group(__DIR__ . '/../routes/api.php');
     }
 
     /**

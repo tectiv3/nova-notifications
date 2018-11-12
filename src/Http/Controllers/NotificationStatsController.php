@@ -10,19 +10,18 @@ class NotificationStatsController
     {
         return [
             'all' => $this->getNotificationsCount(),
-            'failed' => $this->getFailedNotificationsCount(),
+            'failed' => $this->getFailedNotificationsCount()
         ];
     }
 
     private function getNotificationsCount()
     {
-        return DB::table('nova_notifications')
-            ->count();
+        return DB::table('notifications')->count();
     }
 
     private function getFailedNotificationsCount()
     {
-        return DB::table('nova_notifications')
+        return DB::table('notifications')
             ->where('failed', true)
             ->count();
     }

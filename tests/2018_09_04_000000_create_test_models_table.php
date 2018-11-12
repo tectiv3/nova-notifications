@@ -26,6 +26,6 @@ class CreateTestModelsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('nova_notifications');
+        Schema::dropIfExists('test_models');
     }
 }
