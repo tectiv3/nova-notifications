@@ -32,39 +32,6 @@ class ToolServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             $this->routes();
         });
-
-        Event::listen('Illuminate\Notifications\Events\NotificationSent', function (
-            $event
-        ) {
-            NovaNotification::create([
-                'id' => $event->notification->id,
-                'type' => get_class($event->notification),
-                'notifiable_type' => get_class($event->notifiable),
-                'notifiable_id' => $event->notifiable->id ?? '?',
-                'channel' => $event->channel,
-                'failed' => false,
-                'data' => $event->notification->getBody() ?? ''
-                // 'user_id' => $creator ? $creator->id : null,
-                // 'icon' => $data['icon'],
-                // 'body' => $data['body'],
-                // 'action_text' => array_get($data, 'action_text'),
-                // 'action_url' => array_get($data, 'action_url'),
-            ]);
-        });
-
-        Event::listen('Illuminate\Notifications\Events\NotificationFailed', function (
-            $event
-        ) {
-            NovaNotification::create([
-                'id' => $event->notification->id,
-                'type' => get_class($event->notification),
-                'notifiable_type' => get_class($event->notifiable),
-                'notifiable_id' => $event->notifiable->id ?? '',
-                'channel' => $event->channel,
-                'failed' => true,
-                'data' => $event->notification->getBody() ?? ''
-            ]);
-        });
     }
 
     /**
