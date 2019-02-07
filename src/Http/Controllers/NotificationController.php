@@ -10,7 +10,12 @@ class NotificationController extends ApiController
 {
     public function index()
     {
-        return ['data' => DB::table('notifications')->get()];
+        return [
+            'data' => DB::table('notifications')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get()
+        ];
     }
 
     /**
@@ -19,25 +24,14 @@ class NotificationController extends ApiController
      */
     public function send(Request $request)
     {
-        $notificationClass = $request->get('notification')['name'];
-        $params = collect($request->get('notificationParameters'))->map(function (
-            $param
-        ) {
-            if ($this->isEloquentModelClass($param['type'])) {
-                return $param['type']::findOrFail($param['value']);
-            }
-
-            return $param['value'];
-        });
-
+        $notificationClass = 'App\Notifications\Announcement';
         if (!class_exists($notificationClass)) {
             return response('', 400);
         }
 
+        $body = $request->get('notification_body');
         try {
-            $notification = $params
-                ? new $notificationClass(...$params)
-                : new $notificationClass();
+            $notification = new $notificationClass($body);
         } catch (\Throwable $e) {
             return response(
                 __('The notification could not be created with the provided information'),
@@ -46,12 +40,12 @@ class NotificationController extends ApiController
         }
 
         $notifiable = str_replace('.', '\\', $request->get('notifiable')['name']);
+        $id = $request->get('notifiable')['value'];
+        if ($id) {
+            $notifiable = $notifiable::findOrFail($id);
+        }
+        Notification::send($notifiable, $notification);
 
-        Notification::send(
-            $notifiable::findOrFail($request->get('notifiable')['value']),
-            $notification
-        );
-
-        $this->respondSuccess();
+        return $this->respondSuccess();
     }
 }

@@ -1,116 +1,54 @@
-<template>
-    <div>
-        <heading class="mb-6">{{ __('Send Notification') }}</heading>
-
-        <notifications-param-modal
-            v-if="selectedNotification"
-            :selectedNotification="selectedNotification"
-            :notifiables="notifiables"
-            :selectedNotifiable="selectedNotifiable"
-            :formObj="formObj"
-        ></notifications-param-modal>
-
-        <loading-card
-            :loading="initialLoading"
-            class="flex flex-wrap py-8 mb-8 text-center"
-        >
-            <table
-                cellpadding="0"
-                cellspacing="0"
-                class="table w-full"
-                v-if="notificationClasses.length"
-            >
-                <thead>
-                    <tr>
-                        <th>{{ __('Name') }}</th>
-                        <th>{{ __('Parameters') }}</th>
-                        <th></th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    <tr v-for="notificationClass in notificationClasses">
-                        <td>{{ notificationClass.name }}</td>
-                        <td>
-                            <p v-for="param in notificationClass.parameters">
-                                <span class="font-bold">{{ param.name }}</span> ({{
-                                    param.type
-                                }})
-                            </p>
-                        </td>
-                        <td>
-                            <button
-                                class="btn btn-default btn-primary"
-                                @click="selectNotification(notificationClass)"
-                            >
-                                {{ __('Select') }}
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div v-else>
-                <p class="m-4">
-                    {{ __("You don't have any notification classes yet.") }}
-                </p>
-            </div>
-        </loading-card>
-    </div>
-</template>
-
 <script>
-import NotificationsParamModal from './NotificationsParamModal'
+import NotificationParamForm from './NotificationParamForm'
+import tinymce from 'vue-tinymce-editor'
 
 export default {
-    components: { NotificationsParamModal },
+    components: {
+        NotificationParamForm,
+        tinymce,
+    },
     data: () => ({
         notificationClasses: [],
         initialLoading: true,
         error: false,
-        selectedNotification: null,
-        selectedNotifiable: {
-            name: '',
-            id: '',
+        formObj: {
+            notifiable: {
+                name: 'App.User',
+                value: '',
+            },
+            notification_body: '',
         },
-        notifiables: null,
-        formObj: null,
+
+        tinyOptions: {
+            height: 300,
+        },
+
+        notifiables: [],
     }),
     created() {
-        this.getNotificationClasses()
-        this.getNotifiables()
+        // this.getNotifiables()
     },
-    mounted() {
-        this.$root.$on('submitModal', (parameters, formObj) => {
-            this.formObj = formObj
-            this.formObj.notificationParameters = parameters
-            this.formObj.notification = this.selectedNotification
-            this.sendNotification()
-        })
-
-        this.$root.$on('cancelModal', () => {
-            this.deselectNotification()
-        })
-
-        this.$root.$on('notifiableSelected', event => {
-            console.log(event)
-        })
-    },
+    mounted() {},
     methods: {
-        selectNotification(notification) {
-            this.selectedNotification = notification
-        },
-        deselectNotification() {
-            this.selectedNotification = null
-        },
-        getNotificationClasses() {
+        sendNotification() {
             Nova.request()
-                .get('/nova-vendor/nova-notifications/notifications/classes')
+                .post('/nova-vendor/nova-notifications/notifications/send', this.formObj)
                 .then(response => {
-                    this.notificationClasses = response.data ? response.data.data : []
-                    this.initialLoading = false
+                    this.$toasted.show('Notification has been sent!', {
+                        type: 'success',
+                    })
+                    this.$router.push({ name: 'nova-notifications' })
+                })
+                .catch(error => {
+                    console.log(error)
+                    this.$toasted.show('There has been an error!', { type: 'error' })
                 })
         },
+
+        getNotifiableItems(name) {
+            return _.find(this.notifiables.data, { name: name }).options
+        },
+
         getNotifiables() {
             Nova.request()
                 .get('/nova-vendor/nova-notifications/notifiables')
@@ -118,32 +56,101 @@ export default {
                     this.notifiables = response.data
                 })
         },
-        sendNotification() {
-            if (!this.selectedNotification.name.length) {
-                return this.$toasted.show(__('Notification has not been chosen.'), {
-                    type: 'error',
-                })
-            }
-
-            Nova.request()
-                .post('/nova-vendor/nova-notifications/notifications/send', this.formObj)
-                .then(response => {
-                    this.$toasted.show('Notification has been sent!', {
-                        type: 'success',
-                    })
-                    this.selectedNotification = null
-                })
-                .catch(error => {
-                    console.log(error)
-                    this.$toasted.show('There has been an error!', { type: 'error' })
-                })
-        },
-        setParams(params) {
-            console.log(params)
-        },
     },
 }
 </script>
+
+<template>
+    <div>
+        <heading class="mb-4">{{ __('Send Announcement') }}</heading>
+        <card class="flex-col items-center justify-center" style="min-height: 300px">
+            <!--div>
+                <div class="flex border-b border-40">
+                    <div class="w-1/5 px-8 py-6">
+                        <label class="inline-block" for="subject">
+                            Subject
+                        </label>
+                    </div>
+                    <div class="w-1/2 px-8 py-6">
+                        <input v-model="subject" id="subject" type="text" class="w-full form-control form-input form-input-bordered">
+                    </div>
+                </div>
+            </div-->
+            <!-- START Notifiable Item Select -->
+            <div
+                class="md:flex md:items-center mb-6"
+                v-if="false && formObj.notifiable.name"
+            >
+                <div class="md:w-1/3">
+                    <label
+                        class="block text-grey font-bold md:text-right mb-1 md:mb-0 pr-4"
+                        for="notifiable"
+                    >
+                        {{ __('User') }}
+                    </label>
+                </div>
+
+                <div class="md:w-2/3">
+                    <div class="relative">
+                        <select
+                            id="notifiable"
+                            v-model="formObj.notifiable.value"
+                            class="block appearance-none w-full bg-grey-lighter border border-grey-lighter text-grey-darker py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-grey"
+                        >
+                            <option
+                                v-for="option in getNotifiableItems(
+                                    formObj.notifiable.name
+                                )"
+                                :value="option.id"
+                            >
+                                {{ option.name }} (id:{{ option.id }})
+                            </option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute pin-y pin-r flex items-center px-2 text-grey-darker"
+                        >
+                            <svg
+                                class="fill-current h-4 w-4"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- END Notifiable Item Select -->
+            <div>
+                <div class="flex border-b border-40">
+                    <div class="w-1/5 px-8 py-6">
+                        <label class="inline-block text-80 h-9 pt-2">Message</label>
+                        <p class="text-sm leading-normal text-80 italic"></p>
+                    </div>
+                    <div class="w-1/2 px-8 py-6">
+                        <tinymce
+                            id="editor"
+                            v-model="formObj.notification_body"
+                            :other_options="tinyOptions"
+                            @change="change"
+                            :content="content"
+                        ></tinymce>
+                    </div>
+                </div>
+            </div>
+            <div class="px-8 py-4" align="center">
+                <button
+                    class="ml-auto btn btn-default btn-primary mr-3"
+                    @click="sendNotification"
+                >
+                    Send
+                </button>
+            </div>
+        </card>
+    </div>
+</template>
 
 <style>
 /* Scoped Styles */
